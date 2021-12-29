@@ -69,6 +69,23 @@ void ApproveBN::approveNews(const platon::u128& DraftNewID)
         return;
     }
     
+    auto newsItr = mDraftNews.find<"DraftNewID"_n>(DraftNewID);
+    if (newsItr != mDraftNews.cend())
+    {
+        auto result = platon::platon_call(_mBNAddress.self().first, (unsigned int)(0), (unsigned int)(0), "createNews", 
+                                                                    newsItr->NewTitle, newsItr->msgContent, newsItr->msgImages, newsItr->createTime);
+
+        if (result)
+        {
+            PLATON_EMIT_EVENT1(ApproveMessage, "approveNews" , "success");
+        }
+        else{
+            PLATON_EMIT_EVENT1(ApproveMessage, "approveNews" , "cross contract call failed!");
+        }
+    }
+    else{
+        PLATON_EMIT_EVENT1(ApproveMessage, "approveNews" , "None of the news draft!");
+    }
 }
 
 void ApproveBN::approveViewpoint(const platon::u128& DraftNewID)
