@@ -25,6 +25,7 @@ struct News
     (msgauthorAddress)(msgContent)(msgImages)(createTime))
 
     platon::u128 getNewID() const {return DraftNewID;}
+    std::string getAuthor() const {return msgauthorAddress;}
 };
 
 struct Viewpoint
@@ -46,6 +47,7 @@ struct Viewpoint
     (msgauthorAddress)(msgContent)(msgImages)(createTime))
 
     platon::u128 getVPID() const {return DraftViewpointID;}
+    std::string getAuthor() const {return msgauthorAddress;}
 };
 
 class ApproveBN: public platon::Contract{
@@ -69,15 +71,19 @@ public:
                                 const std::string& authorAddress);
 
     ACTION void approveNews(const platon::u128& DraftNewID);
-    ACTION void approveViewpoint(const platon::u128& DraftNewID);
+    ACTION void approveViewpoint(const platon::u128& DraftVPID);
 
     ACTION void rejectNews(const platon::u128& DraftNewID);
-    ACTION void rejectViewpoint(const platon::u128& DraftNewID);
+    ACTION void rejectViewpoint(const platon::u128& DraftVPID);
 
     ACTION void setBNAddress(const std::string& bn_address);
     ACTION void setOwnerAddress(const std::string& owner_address);
 
+    // Return all draft news if the caller is the owner; 
+    // Otherwise, return draft news who's author is the caller.
     CONST std::list<News> getDraftNews();
+
+    // The same as `getDraftNews`
     CONST std::list<Viewpoint> getDraftViewpoint();
 
     CONST std::string getOwnerAddress(){
@@ -95,13 +101,17 @@ private:
     platon::db::MultiIndex<
 		"DraftNews"_n, News,
 		platon::db::IndexedBy<"DraftNewID"_n, platon::db::IndexMemberFun<News, platon::u128, &News::getNewID,
-		platon::db::IndexType::UniqueIndex>>>                               
+		platon::db::IndexType::UniqueIndex>>,
+		platon::db::IndexedBy<"NewsAuthor"_n, platon::db::IndexMemberFun<News, std::string, &News::getAuthor,
+		platon::db::IndexType::NormalIndex>>>                               
                                                                             mDraftNews;                //用于存放观点，观点单独存，便于查找
 
     platon::db::MultiIndex<
 		"DraftViewpoints"_n, Viewpoint,
 		platon::db::IndexedBy<"DraftVPID"_n, platon::db::IndexMemberFun<Viewpoint, platon::u128, &Viewpoint::getVPID,
-		platon::db::IndexType::UniqueIndex>>>                               
+		platon::db::IndexType::UniqueIndex>>,
+		platon::db::IndexedBy<"VPAuthor"_n, platon::db::IndexMemberFun<Viewpoint, std::string, &Viewpoint::getAuthor,
+		platon::db::IndexType::NormalIndex>>>                               
                                                                             mDraftVP;                //用于存放观点，观点单独存，便于查找
 
     platon::StorageType<"Owner"_n, std::pair<platon::Address, bool>>        _mOwner;            //合约所有者地址，即部署者，黑客松中留个特殊权限
