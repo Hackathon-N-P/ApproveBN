@@ -78,6 +78,7 @@ void ApproveBN::approveNews(const platon::u128& DraftNewID)
         if (result)
         {
             PLATON_EMIT_EVENT1(ApproveMessage, "approveNews" , "success");
+            mDraftNews.erase(newsItr);
         }
         else{
             PLATON_EMIT_EVENT1(ApproveMessage, "approveNews" , "cross contract call failed!");
