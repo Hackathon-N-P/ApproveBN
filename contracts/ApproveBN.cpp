@@ -14,6 +14,14 @@ void ApproveBN::createNewsDraft(const std::string& title,
                                   const std::string& createTime,
                                   const std::string& authorAddress)
 {
+    // Only BN Contract can create Draft
+    auto caller = platon::platon_caller();
+    if (caller != _mBNAddress.self().first)
+    {
+        PLATON_EMIT_EVENT1(ApproveMessage, "Create Draft News" , "Invalid caller");
+        return;
+    }
+    
     News curNews;
     curNews.NewTitle = title;
     curNews.DraftNewID = mDraftNewsCount.self();
@@ -38,6 +46,13 @@ void ApproveBN::createViewPointDraft(platon::u128 NewID,
                                 const std::string& createTime,
                                 const std::string& authorAddress)
 {
+    auto caller = platon::platon_caller();
+    if (caller != _mBNAddress.self().first)
+    {
+        PLATON_EMIT_EVENT1(ApproveMessage, "Create Draft News" , "Invalid caller");
+        return;
+    }
+
     Viewpoint curVP;
     curVP.point = isSupported;
     curVP.DraftViewpointID = mDraftVPCount.self();
@@ -58,7 +73,8 @@ void ApproveBN::createViewPointDraft(platon::u128 NewID,
 
 void ApproveBN::approveNews(const platon::u128& DraftNewID)
 {
-    auto userAddress = platon::platon_origin();
+    // The owner might be the multisigner contract
+    auto userAddress = platon::platon_caller();
     if (_mOwner.self().first != userAddress)
     {
         PLATON_EMIT_EVENT1(ApproveMessage, "approveNews" , "Unauthorized");
@@ -98,7 +114,7 @@ void ApproveBN::approveNews(const platon::u128& DraftNewID)
 
 void ApproveBN::approveViewpoint(const platon::u128& DraftVPID)
 {
-    auto userAddress = platon::platon_origin();
+    auto userAddress = platon::platon_caller();
     if (_mOwner.self().first != userAddress)
     {
         PLATON_EMIT_EVENT1(ApproveMessage, "approveViewpoint" , "Unauthorized");
@@ -140,7 +156,7 @@ void ApproveBN::approveViewpoint(const platon::u128& DraftVPID)
 
 void ApproveBN::rejectNews(const platon::u128& DraftNewID)
 {
-    auto userAddress = platon::platon_origin();
+    auto userAddress = platon::platon_caller();
     if (_mOwner.self().first != userAddress)
     {
         PLATON_EMIT_EVENT1(ApproveMessage, "rejectNews" , "Unauthorized");
@@ -160,7 +176,7 @@ void ApproveBN::rejectNews(const platon::u128& DraftNewID)
 
 void ApproveBN::rejectViewpoint(const platon::u128& DraftVPID)
 {
-    auto userAddress = platon::platon_origin();
+    auto userAddress = platon::platon_caller();
     if (_mOwner.self().first != userAddress)
     {
         PLATON_EMIT_EVENT1(ApproveMessage, "rejectViewpoint" , "Unauthorized");
@@ -180,7 +196,7 @@ void ApproveBN::rejectViewpoint(const platon::u128& DraftVPID)
 
 void ApproveBN::setBNAddress(const std::string& bn_address)
 {
-    auto userAddress = platon::platon_origin();
+    auto userAddress = platon::platon_caller();
     if (_mOwner.self().first != userAddress)
     {
         PLATON_EMIT_EVENT1(ApproveMessage, "setBNAddress" , "Unauthorized");
@@ -200,7 +216,7 @@ void ApproveBN::setBNAddress(const std::string& bn_address)
 
 void ApproveBN::setOwnerAddress(const std::string& owner_address)
 {
-    auto userAddress = platon::platon_origin();
+    auto userAddress = platon::platon_caller();
     if (_mOwner.self().first != userAddress)
     {
         PLATON_EMIT_EVENT1(ApproveMessage, "setOwnerAddress" , "Unauthorized");
@@ -220,13 +236,14 @@ void ApproveBN::setOwnerAddress(const std::string& owner_address)
 
 std::list<News> ApproveBN::getDraftNews()
 {
-    auto userAddress = platon::platon_origin();
+    auto userAddress = platon::platon_caller();
     std::string userAddrStr = platon::encode(userAddress, hrp);
 
     auto output = std::list<News>();
 
     if (_mOwner.self().first == userAddress)
     {
+        // When multisigner contract be the owner, `getDraftNews` shall be called through multisigner
         // return all draft news
         for (auto newsItr = mDraftNews.cbegin(); newsItr != mDraftNews.cend(); ++newsItr)
         {
@@ -234,7 +251,7 @@ std::list<News> ApproveBN::getDraftNews()
         }
     }
     else{
-        // return the draft news with the author `userAddrStr`
+        // return the draft news with the author `userAddrStr`, that is, the caller
         auto normalIndexs = mDraftNews.get_index<"NewsAuthor"_n>();
         for (auto newsItr = normalIndexs.cbegin(userAddrStr); newsItr != normalIndexs.cend(userAddrStr); ++newsItr)
         {
@@ -247,7 +264,7 @@ std::list<News> ApproveBN::getDraftNews()
 
 std::list<Viewpoint> ApproveBN::getDraftViewpoint()
 {
-    auto userAddress = platon::platon_origin();
+    auto userAddress = platon::platon_caller();
     std::string userAddrStr = platon::encode(userAddress, hrp);
 
     auto output = std::list<Viewpoint>();
